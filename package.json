@@ -1,0 +1,28 @@
+{
+  "name": "prismatic",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^16.11.9",
+    "npxd": "^1.2.1",
+    "prisma": "^3.6.0-dev.18",
+    "ts-node": "^10.4.0",
+    "typescript": "^4.5.2"
+  },
+  "dependencies": {
+    "@apollo/client": "^3.4.17",
+    "@prisma/client": "^3.5.0",
+    "@types/bcrypt": "^5.0.0",
+    "bcrypt": "^5.0.1",
+    "dotenv": "^10.0.0",
+    "graphql": "^16.0.1",
+    "path": "^0.12.7"
+  }
+}
