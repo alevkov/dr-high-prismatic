@@ -18,11 +18,11 @@ model User {
   biometrics    Biometric?
   experiences   Experience[]
 
-  @@index([id], map: "user_id_uindex")
-  @@index([email], map: "user_email_index")
-  @@index([first_name], map: "user_first_name_index")
-  @@index([last_name], map: "user_last_name_index")
-  @@index([username], map: "user_username_index")
+  @@index([id], map: "User_id_uindex")
+  @@index([email], map: "User_email_index")
+  @@index([first_name], map: "User_first_name_index")
+  @@index([last_name], map: "User_last_name_index")
+  @@index([username], map: "User_username_index")
 }
 
 model Biometric {
@@ -33,7 +33,7 @@ model Biometric {
   height  Int
   sex     sex
 
-  @@index([id], map: "biometric_id_uindex")
+  @@index([id], map: "Biometric_id_uindex")
 }
 
 model Substance {
@@ -52,8 +52,8 @@ model Substance {
   interactions        String[]
   image_url           String?
 
-  @@index([id], map: "substance_id_uindex")
-  @@index([primary_name], map: "substance_name_index")
+  @@index([id], map: "Substance_id_uindex")
+  @@index([primary_name], map: "Substance_name_index")
 }
 
 model Chemical {
@@ -64,8 +64,8 @@ model Chemical {
   formula    String?
   substances SubstancesOnChemicals[]
 
-  @@index([id], map: "chemical_id_uindex")
-  @@index([name], map: "chemical_name_index")
+  @@index([id], map: "Chemical_id_uindex")
+  @@index([name], map: "Chemical_name_index")
 }
 
 model SubstancesOnChemicals {
@@ -95,7 +95,7 @@ model Experience {
   roa          roatype
   mood         Int
 
-  @@index([id], map: "experience_id_uindex")
+  @@index([id], map: "Experience_id_uindex")
 }
 
 model AlternativeName {
@@ -103,14 +103,14 @@ model AlternativeName {
   substance_id Int
   substance    Substance @relation(fields: [substance_id], references: [id])
 
-  @@index([name], map: "alternative_name_name_uindex")
+  @@index([name], map: "Alternative_Name_name_uindex")
 }
 
 model CrossTolerance {
   name     String @id @unique
   strength Int
 
-  @@index([name], map: "cross_tolerance_name_uindex")
+  @@index([name], map: "Cross_Tolerance_name_uindex")
 }
 
 model Roa {
@@ -127,7 +127,7 @@ model Roa {
   half_life_max       Float
   half_life_units     String
 
-  @@index([id], map: "roa_id_uindex")
+  @@index([id], map: "Roa_id_uindex")
 }
 
 model RoaDose {
@@ -153,7 +153,7 @@ model RoaDose {
   strong_max      Float
   strong_units    String
 
-  @@index([id], map: "roa_dose_id_uindex")
+  @@index([id], map: "Roa_Dose_id_uindex")
 }
 
 model RoaDuration {
@@ -189,7 +189,7 @@ model RoaDuration {
   total_max       Float
   total_units     String
 
-  @@index([id], map: "roa_duration_id_uindex")
+  @@index([id], map: "Roa_Duration_id_uindex")
 }
 
 model UnitRange {
@@ -265,6 +265,7 @@ enum form {
   powder
   tab
   seed
+  crystal
 }
 
 enum interactiontype {
