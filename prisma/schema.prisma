@@ -7,307 +7,247 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model alembic_version {
-  version_num String @id(map: "alembic_version_pkc") @db.VarChar(32)
+model User {
+  id            Int          @id @default(autoincrement())
+  email         String       @unique @db.VarChar(120)
+  password_hash String?      @db.VarChar(128)
+  first_name    String?      @db.VarChar(32)
+  last_name     String?      @db.VarChar(32)
+  username      String       @db.VarChar(32)
+  birthday      DateTime?    @db.Date
+  biometrics    Biometric?
+  experiences   Experience[]
+
+  @@index([id], map: "user_id_uindex")
+  @@index([email], map: "user_email_index")
+  @@index([first_name], map: "user_first_name_index")
+  @@index([last_name], map: "user_last_name_index")
+  @@index([username], map: "user_username_index")
 }
 
-model biometrics {
-  id       Int     @id @default(autoincrement())
-  user_id  Int
-  user_ref String?
-  weight   Int
-  height   Int
-  sex      sex?
-  users    users   @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+model Biometric {
+  id      Int  @id @default(autoincrement())
+  user_id Int  @unique
+  user    User @relation(fields: [user_id], references: [id])
+  weight  Int
+  height  Int
+  sex     sex
 
-  @@index([id], map: "ix_biometrics_id")
+  @@index([id], map: "biometric_id_uindex")
 }
 
-model chemicals {
-  id        Int     @id @default(autoincrement())
-  name      String  @unique(map: "ix_chemicals_name") @db.VarChar(64)
-  formula   String  @unique(map: "ix_chemicals_formula") @db.VarChar(64)
-  structure String?
-  isomer    String? @db.VarChar(64)
-  drugs     drugs[]
+model Substance {
+  id                  Int                     @id @default(autoincrement())
+  type                substancetype
+  names               AlternativeName[]
+  primary_name        String
+  roas                Roa[]
+  summary             String
+  addiction_potential Int?                    @db.SmallInt
+  toxicity            toxicity
+  chemicals           SubstancesOnChemicals[]
+  form                form[]
+  primary_form        form
+  experiences         Experience[]
+  interactions        String[]
+  image_url           String?
 
-  @@index([id], map: "ix_chemicals_id")
+  @@index([id], map: "substance_id_uindex")
+  @@index([primary_name], map: "substance_name_index")
 }
 
-model drug_alt_names {
-  id                                          Int     @id @default(autoincrement())
-  drug_ref                                    String
-  drug_id                                     Int?
-  name                                        String  @db.VarChar(128)
-  drugs_drug_alt_names_drug_idTodrugs         drugs?  @relation("drug_alt_names_drug_idTodrugs", fields: [drug_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  drugs_drug_alt_namesTodrugs_primary_name_id drugs[] @relation("drug_alt_namesTodrugs_primary_name_id")
+model Chemical {
+  id         Int                     @id @default(autoincrement())
+  name       String
+  salt       String?
+  isomer     String?
+  formula    String?
+  substances SubstancesOnChemicals[]
 
-  @@index([id], map: "ix_drug_alt_names_id")
-  @@index([name], map: "ix_drug_alt_names_name")
+  @@index([id], map: "chemical_id_uindex")
+  @@index([name], map: "chemical_name_index")
 }
 
-model drug_cross_tolerances {
-  drug_a                                    Int
-  drug_b                                    Int
-  drugs_drug_cross_tolerances_drug_aTodrugs drugs @relation("drug_cross_tolerances_drug_aTodrugs", fields: [drug_a], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  drugs_drug_cross_tolerances_drug_bTodrugs drugs @relation("drug_cross_tolerances_drug_bTodrugs", fields: [drug_b], references: [id], onDelete: NoAction, onUpdate: NoAction)
+model SubstancesOnChemicals {
+  chemical     Chemical  @relation(fields: [chemical_id], references: [id])
+  chemical_id  Int
+  substance    Substance @relation(fields: [substance_id], references: [id])
+  substance_id Int
 
-  @@id([drug_a, drug_b])
+  @@id([chemical_id, substance_id])
 }
 
-model drug_interactions {
-  drug_a                                Int
-  drug_b                                Int
-  description                           String?
-  interaction                           interactiontype?
-  drugs_drug_interactions_drug_aTodrugs drugs            @relation("drug_interactions_drug_aTodrugs", fields: [drug_a], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  drugs_drug_interactions_drug_bTodrugs drugs            @relation("drug_interactions_drug_bTodrugs", fields: [drug_b], references: [id], onDelete: NoAction, onUpdate: NoAction)
+model Experience {
+  id           Int             @id @default(autoincrement())
+  ref          String?         @unique @default(uuid())
+  user_id      Int
+  user         User            @relation(fields: [user_id], references: [id])
+  substance_id Int
+  substance    Substance       @relation(fields: [substance_id], references: [id])
+  dosings      Dosing[]
+  created      DateTime        @default(now()) @db.Timestamptz(6)
+  started      DateTime?       @db.Timestamptz(6)
+  completed    DateTime?       @db.Timestamptz(6)
+  reflected    DateTime?       @db.Timestamptz(6)
+  status       experiencestate @default(started)
+  first_time   Boolean         @default(true)
+  place_slug   String          @db.VarChar(128)
+  roa          roatype
+  mood         Int
 
-  @@id([drug_a, drug_b])
+  @@index([id], map: "experience_id_uindex")
 }
 
-model drug_toxicities {
-  id       Int       @id @default(autoincrement())
-  drug_id  Int?
-  toxicity toxicity?
-  drugs    drugs?    @relation(fields: [drug_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+model AlternativeName {
+  name         String    @id @unique
+  substance_id Int
+  substance    Substance @relation(fields: [substance_id], references: [id])
 
-  @@index([id], map: "ix_drug_toxicities_id")
+  @@index([name], map: "alternative_name_name_uindex")
 }
 
-model drugs {
-  id                                                        Int                     @id @default(autoincrement())
-  ref                                                       String?                 @unique
-  type                                                      substancetype?
-  primary_roa_id                                            Int?
-  summary                                                   String?
-  chemical_id                                               Int?
-  salt                                                      Boolean?
-  salt_slug                                                 String?                 @db.VarChar(32)
-  addiction_potential                                       Int?                    @db.SmallInt
-  primary_name_id                                           Int?
-  chemicals                                                 chemicals?              @relation(fields: [chemical_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  drug_alt_names_drug_alt_namesTodrugs_primary_name_id      drug_alt_names?         @relation("drug_alt_namesTodrugs_primary_name_id", fields: [primary_name_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  roas                                                      roas?                   @relation(fields: [primary_roa_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  drug_alt_names_drug_alt_names_drug_idTodrugs              drug_alt_names[]        @relation("drug_alt_names_drug_idTodrugs")
-  drug_cross_tolerances_drug_cross_tolerances_drug_aTodrugs drug_cross_tolerances[] @relation("drug_cross_tolerances_drug_aTodrugs")
-  drug_cross_tolerances_drug_cross_tolerances_drug_bTodrugs drug_cross_tolerances[] @relation("drug_cross_tolerances_drug_bTodrugs")
-  drug_interactions_drug_interactions_drug_aTodrugs         drug_interactions[]     @relation("drug_interactions_drug_aTodrugs")
-  drug_interactions_drug_interactions_drug_bTodrugs         drug_interactions[]     @relation("drug_interactions_drug_bTodrugs")
-  drug_toxicities                                           drug_toxicities[]
-  rel_drug_roa_drugsTorel_drug_roa_drug_id                  rel_drug_roa[]          @relation("drugsTorel_drug_roa_drug_id")
-  rel_drug_roa_drugsTorel_drug_roa_roa_id                   rel_drug_roa[]          @relation("drugsTorel_drug_roa_roa_id")
-  rel_formulation_drug                                      rel_formulation_drug[]
-  rel_formulation_roa                                       rel_formulation_roa[]
+model CrossTolerance {
+  name     String @id @unique
+  strength Int
 
-  @@index([id], map: "ix_drugs_id")
+  @@index([name], map: "cross_tolerance_name_uindex")
 }
 
-model experiences {
-  user_id         Int?
-  user_ref        String?
-  formulation_ref String?
-  drug_ref        String?
-  id              Int              @id @default(autoincrement())
-  ref             String?          @unique
-  created         DateTime?        @default(now()) @db.Timestamptz(6)
-  started         DateTime?        @default(now()) @db.Timestamptz(6)
-  completed       DateTime?        @default(now()) @db.Timestamptz(6)
-  deleted         DateTime?        @default(now()) @db.Timestamptz(6)
-  status          experiencestate?
-  first_time      Boolean
-  place_slug      String?          @db.VarChar(128)
-  roa             roatype?
-  dose_id         Int?
-  mood            Int?
-  unit_values     unit_values?     @relation(fields: [dose_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  users           users?           @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+model Roa {
+  id                  Int             @id @default(autoincrement())
+  substance_id        Int
+  substance           Substance       @relation(fields: [substance_id], references: [id])
+  dose                RoaDose?
+  duration            RoaDuration?
+  bioavailability     Bioavailability @relation(fields: [bioavailability_min, bioavailability_max], references: [min, max])
+  bioavailability_min Float
+  bioavailability_max Float
+  half_life           UnitRange       @relation(fields: [half_life_min, half_life_max, half_life_units], references: [min, max, units])
+  half_life_min       Float
+  half_life_max       Float
+  half_life_units     String
 
-  @@index([completed], map: "ix_experiences_completed")
-  @@index([created], map: "ix_experiences_created")
-  @@index([deleted], map: "ix_experiences_deleted")
-  @@index([id], map: "ix_experiences_id")
-  @@index([started], map: "ix_experiences_started")
+  @@index([id], map: "roa_id_uindex")
 }
 
-model formulation_alt_names {
-  id                                                               Int            @id @default(autoincrement())
-  formulation_ref                                                  String
-  formulation_id                                                   Int?
-  name                                                             String         @db.VarChar(128)
-  formulations_formulation_alt_names_formulation_idToformulations  formulations?  @relation("formulation_alt_names_formulation_idToformulations", fields: [formulation_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  formulations_formulation_alt_namesToformulations_primary_name_id formulations[] @relation("formulation_alt_namesToformulations_primary_name_id")
+model RoaDose {
+  id              Int       @id @default(autoincrement())
+  roa             Roa       @relation(fields: [roa_id], references: [id])
+  roa_id          Int       @unique
+  threshold       UnitValue @relation("threshold", fields: [threshold_value, threshold_units], references: [value, units])
+  threshold_value Float
+  threshold_units String
+  heavy           UnitValue @relation("heavy", fields: [heavy_value, heavy_units], references: [value, units])
+  heavy_value     Float
+  heavy_units     String
+  common          UnitRange @relation("common", fields: [common_min, common_max, common_units], references: [min, max, units])
+  common_min      Float
+  common_max      Float
+  common_units    String
+  weak            UnitRange @relation("weak", fields: [weak_min, weak_max, weak_units], references: [min, max, units])
+  weak_min        Float
+  weak_max        Float
+  weak_units      String
+  strong          UnitRange @relation("strong", fields: [strong_min, strong_max, strong_units], references: [min, max, units])
+  strong_min      Float
+  strong_max      Float
+  strong_units    String
 
-  @@index([id], map: "ix_formulation_alt_names_id")
-  @@index([name], map: "ix_formulation_alt_names_name")
+  @@index([id], map: "roa_dose_id_uindex")
 }
 
-model formulation_images {
-  id             Int           @id @default(autoincrement())
-  formulation_id Int?
-  url            String?
-  formulations   formulations? @relation(fields: [formulation_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+model RoaDuration {
+  id              Int       @id @default(autoincrement())
+  roa             Roa       @relation(fields: [roa_id], references: [id])
+  roa_id          Int       @unique
+  afterglow       UnitRange @relation("afterglow", fields: [afterglow_min, afterglow_max, afterglow_units], references: [min, max, units])
+  afterglow_min   Float
+  afterglow_max   Float
+  afterglow_units String
+  comeup          UnitRange @relation("comeup", fields: [comeup_min, comeup_max, comeup_units], references: [min, max, units])
+  comeup_min      Float
+  comeup_max      Float
+  comeup_units    String
+  duration        UnitRange @relation("duration", fields: [duration_min, duration_max, duration_units], references: [min, max, units])
+  duration_min    Float
+  duration_max    Float
+  duration_units  String
+  offset          UnitRange @relation("offset", fields: [offset_min, offset_max, offset_units], references: [min, max, units])
+  offset_min      Float
+  offset_max      Float
+  offset_units    String
+  onset           UnitRange @relation("onset", fields: [onset_min, onset_max, onset_units], references: [min, max, units])
+  onset_min       Float
+  onset_max       Float
+  onset_units     String
+  peak            UnitRange @relation("peak", fields: [peak_min, peak_max, peak_units], references: [min, max, units])
+  peak_min        Float
+  peak_max        Float
+  peak_units      String
+  total           UnitRange @relation("total", fields: [total_min, total_max, total_units], references: [min, max, units])
+  total_min       Float
+  total_max       Float
+  total_units     String
 
-  @@index([id], map: "ix_formulation_images_id")
+  @@index([id], map: "roa_duration_id_uindex")
 }
 
-model formulations {
-  id                                                                        Int                     @id @default(autoincrement())
-  type                                                                      substancetype?
-  ref                                                                       String?                 @unique
-  primary_roa_id                                                            Int?
-  summary                                                                   String?
-  addiction_potential                                                       Int?                    @db.SmallInt
-  form                                                                      form?
-  primary_name_id                                                           Int?
-  formulation_alt_names_formulation_alt_namesToformulations_primary_name_id formulation_alt_names?  @relation("formulation_alt_namesToformulations_primary_name_id", fields: [primary_name_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  roas                                                                      roas?                   @relation(fields: [primary_roa_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  formulation_alt_names_formulation_alt_names_formulation_idToformulations  formulation_alt_names[] @relation("formulation_alt_names_formulation_idToformulations")
-  formulation_images                                                        formulation_images[]
-  rel_formulation_drug                                                      rel_formulation_drug[]
-  rel_formulation_roa                                                       rel_formulation_roa[]
+model UnitRange {
+  afterglow_for RoaDuration[] @relation("afterglow")
+  comeup_for    RoaDuration[] @relation("comeup")
+  duration_for  RoaDuration[] @relation("duration")
+  offset_for    RoaDuration[] @relation("offset")
+  onset_for     RoaDuration[] @relation("onset")
+  peak_for      RoaDuration[] @relation("peak")
+  total_for     RoaDuration[] @relation("total")
+  common_for    RoaDose[]     @relation("common")
+  weak_for      RoaDose[]     @relation("weak")
+  strong_for    RoaDose[]     @relation("strong")
+  half_life_for Roa?
 
-  @@index([id], map: "ix_formulations_id")
+  min   Float
+  max   Float
+  units String
+
+  @@id([min, max, units])
 }
 
-model rel_drug_roa {
-  id                                Int    @id @default(autoincrement())
-  drug_id                           Int?
-  roa_id                            Int?
-  drugs_drugsTorel_drug_roa_drug_id drugs? @relation("drugsTorel_drug_roa_drug_id", fields: [drug_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  drugs_drugsTorel_drug_roa_roa_id  drugs? @relation("drugsTorel_drug_roa_roa_id", fields: [roa_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+model UnitValue {
+  experiences   Dosing[]
+  threshold_for RoaDose[] @relation("threshold")
+  heavy_for     RoaDose[] @relation("heavy")
+  value         Float
+  units         String
 
-  @@index([id], map: "ix_rel_drug_roa_id")
+  @@id([value, units])
 }
 
-model rel_formulation_drug {
-  id             Int           @id @default(autoincrement())
-  formulation_id Int?
-  drug_id        Int?
-  drugs          drugs?        @relation(fields: [drug_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  formulations   formulations? @relation(fields: [formulation_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+model Dosing {
+  experience_id Int
+  experience    Experience @relation(fields: [experience_id], references: [id])
+  dose          UnitValue  @relation(fields: [dose_value, dose_units], references: [value, units])
+  dose_value    Float
+  dose_units    String
+  submitted_at  DateTime   @default(now())
+  substance     String
 
-  @@index([id], map: "ix_rel_formulation_drug_id")
+  @@id([experience_id, substance, submitted_at])
 }
 
-model rel_formulation_roa {
-  id             Int           @id @default(autoincrement())
-  formulation_id Int?
-  roa_id         Int?
-  formulations   formulations? @relation(fields: [formulation_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  drugs          drugs?        @relation(fields: [roa_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+model Bioavailability {
+  bioavailability_to Roa?
+  roa_id             Int
+  min                Float
+  max                Float
 
-  @@index([id], map: "ix_rel_formulation_roa_id")
+  @@id([min, max])
 }
 
-model roa_doses {
-  id                                         Int         @id @default(autoincrement())
-  threshold                                  Float?
-  heavy                                      Float?
-  units                                      String?     @db.VarChar(8)
-  common_id                                  Int?
-  weak_id                                    Int?
-  strong_id                                  Int?
-  roa_ranges_roa_doses_common_idToroa_ranges roa_ranges? @relation("roa_doses_common_idToroa_ranges", fields: [common_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  roa_ranges_roa_doses_strong_idToroa_ranges roa_ranges? @relation("roa_doses_strong_idToroa_ranges", fields: [strong_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  roa_ranges_roa_doses_weak_idToroa_ranges   roa_ranges? @relation("roa_doses_weak_idToroa_ranges", fields: [weak_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  roas                                       roas[]
+model Interaction {
+  name String
+  type interactiontype
 
-  @@index([id], map: "ix_roa_doses_id")
-}
-
-model roa_duration_ranges {
-  id                                                            Int             @id @default(autoincrement())
-  min                                                           Float?
-  max                                                           Float?
-  units                                                         String?         @db.VarChar(8)
-  roa_durations_roa_duration_rangesToroa_durations_afterglow_id roa_durations[] @relation("roa_duration_rangesToroa_durations_afterglow_id")
-  roa_durations_roa_duration_rangesToroa_durations_comeup_id    roa_durations[] @relation("roa_duration_rangesToroa_durations_comeup_id")
-  roa_durations_roa_duration_rangesToroa_durations_duration_id  roa_durations[] @relation("roa_duration_rangesToroa_durations_duration_id")
-  roa_durations_roa_duration_rangesToroa_durations_offset_id    roa_durations[] @relation("roa_duration_rangesToroa_durations_offset_id")
-  roa_durations_roa_duration_rangesToroa_durations_onset_id     roa_durations[] @relation("roa_duration_rangesToroa_durations_onset_id")
-  roa_durations_roa_duration_rangesToroa_durations_peak_id      roa_durations[] @relation("roa_duration_rangesToroa_durations_peak_id")
-  roa_durations_roa_duration_rangesToroa_durations_total_id     roa_durations[] @relation("roa_duration_rangesToroa_durations_total_id")
-  roas                                                          roas[]
-
-  @@index([id], map: "ix_roa_duration_ranges_id")
-}
-
-model roa_durations {
-  id                                                                  Int                  @id @default(autoincrement())
-  afterglow_id                                                        Int?
-  comeup_id                                                           Int?
-  duration_id                                                         Int?
-  offset_id                                                           Int?
-  onset_id                                                            Int?
-  peak_id                                                             Int?
-  total_id                                                            Int?
-  roa_duration_ranges_roa_duration_rangesToroa_durations_afterglow_id roa_duration_ranges? @relation("roa_duration_rangesToroa_durations_afterglow_id", fields: [afterglow_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  roa_duration_ranges_roa_duration_rangesToroa_durations_comeup_id    roa_duration_ranges? @relation("roa_duration_rangesToroa_durations_comeup_id", fields: [comeup_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  roa_duration_ranges_roa_duration_rangesToroa_durations_duration_id  roa_duration_ranges? @relation("roa_duration_rangesToroa_durations_duration_id", fields: [duration_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  roa_duration_ranges_roa_duration_rangesToroa_durations_offset_id    roa_duration_ranges? @relation("roa_duration_rangesToroa_durations_offset_id", fields: [offset_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  roa_duration_ranges_roa_duration_rangesToroa_durations_onset_id     roa_duration_ranges? @relation("roa_duration_rangesToroa_durations_onset_id", fields: [onset_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  roa_duration_ranges_roa_duration_rangesToroa_durations_peak_id      roa_duration_ranges? @relation("roa_duration_rangesToroa_durations_peak_id", fields: [peak_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  roa_duration_ranges_roa_duration_rangesToroa_durations_total_id     roa_duration_ranges? @relation("roa_duration_rangesToroa_durations_total_id", fields: [total_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  roas                                                                roas[]
-
-  @@index([id], map: "ix_roa_durations_id")
-}
-
-model roa_ranges {
-  id                                        Int         @id @default(autoincrement())
-  min                                       Float?
-  max                                       Float?
-  roa_doses_roa_doses_common_idToroa_ranges roa_doses[] @relation("roa_doses_common_idToroa_ranges")
-  roa_doses_roa_doses_strong_idToroa_ranges roa_doses[] @relation("roa_doses_strong_idToroa_ranges")
-  roa_doses_roa_doses_weak_idToroa_ranges   roa_doses[] @relation("roa_doses_weak_idToroa_ranges")
-  roas                                      roas[]
-
-  @@index([id], map: "ix_roa_ranges_id")
-}
-
-model roas {
-  id                  Int                  @id @default(autoincrement())
-  type                roatype?
-  dose_id             Int?
-  duration_id         Int?
-  bioavailability_id  Int?
-  half_life_id        Int?
-  roa_ranges          roa_ranges?          @relation(fields: [bioavailability_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  roa_doses           roa_doses?           @relation(fields: [dose_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  roa_durations       roa_durations?       @relation(fields: [duration_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  roa_duration_ranges roa_duration_ranges? @relation(fields: [half_life_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  drugs               drugs[]
-  formulations        formulations[]
-
-  @@index([id], map: "ix_roas_id")
-}
-
-model unit_values {
-  id          Int           @id @default(autoincrement())
-  value       Float
-  units       String?       @db.VarChar(8)
-  experiences experiences[]
-
-  @@index([id], map: "ix_unit_values_id")
-}
-
-model users {
-  email         String?       @unique(map: "ix_users_email") @db.VarChar(120)
-  password_hash String?       @db.VarChar(128)
-  ref           String?       @unique
-  id            Int           @id @default(autoincrement())
-  first_name    String?       @db.VarChar(32)
-  last_name     String?       @db.VarChar(32)
-  username      String?       @db.VarChar(32)
-  birthday      DateTime?     @db.Date
-  biometrics    biometrics[]
-  experiences   experiences[]
-
-  @@index([first_name], map: "ix_users_first_name")
-  @@index([id], map: "ix_users_id")
-  @@index([last_name], map: "ix_users_last_name")
-  @@index([username], map: "ix_users_username")
+  @@id([name, type])
 }
 
 enum experiencestate {
@@ -324,6 +264,7 @@ enum form {
   fungus
   powder
   tab
+  seed
 }
 
 enum interactiontype {

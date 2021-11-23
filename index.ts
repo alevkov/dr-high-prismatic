@@ -7,10 +7,7 @@ import bcrypt from 'bcrypt';
 const prisma = new PrismaClient()
 
 async function main() {
-  const admin = await prisma.users.findUnique({where: {email: "lex@drugsand.me"}});
-  console.log(admin)
-
-  console.log(bcrypt.compareSync("shadow", admin?.password_hash!));
+  const admin = await prisma.user.findUnique({where: {email: "lex@drugsand.me"}});
 }
 
 main()

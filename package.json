@@ -1,18 +1,21 @@
 {
   "name": "prismatic",
   "version": "1.0.0",
-  "description": "",
+  "description": "Schema-based API for Dr. High",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "serve": "nodemon app.ts"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@types/express": "^4.17.13",
     "@types/node": "^16.11.9",
+    "nodemon": "^2.0.15",
     "npxd": "^1.2.1",
-    "prisma": "^3.6.0-dev.18",
+    "prisma": "^3.5.0",
     "ts-node": "^10.4.0",
     "typescript": "^4.5.2"
   },
@@ -22,7 +25,8 @@
     "@types/bcrypt": "^5.0.0",
     "bcrypt": "^5.0.1",
     "dotenv": "^10.0.0",
-    "graphql": "^16.0.1",
+    "express": "^4.17.1",
+    "graphql": "^14.0.0",
     "path": "^0.12.7"
   }
 }
