@@ -6,7 +6,9 @@ CREATE OR REPLACE FUNCTION set_pwd()
 RETURNS trigger AS
 $BODY$
 BEGIN
-    NEW.password_hash := crypt(NEW.password_hash, gen_salt('bf', 10));
+    IF NEW.password_hash IS DISTINCT FROM OLD.password_hash THEN -- Oops forgot this
+        NEW.password_hash := crypt(NEW.password_hash, gen_salt('bf', 10));
+    END IF;
     RETURN NEW;
 END;
 $BODY$
