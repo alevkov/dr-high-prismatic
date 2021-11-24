@@ -1,5 +1,6 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["referentialIntegrity", "filterJson"]
 }
 
 datasource db {
@@ -28,12 +29,22 @@ model User {
 model Biometric {
   id      Int  @id @default(autoincrement())
   user_id Int  @unique
-  user    User @relation(fields: [user_id], references: [id])
+  user    User @relation(fields: [user_id], references: [id], onDelete: Cascade)
   weight  Int
   height  Int
   sex     sex
 
   @@index([id], map: "Biometric_id_uindex")
+}
+
+model LoginAttempt {
+  id       Int       @id @default(autoincrement())
+  email    String    @db.VarChar(120)
+  token    String?   @db.VarChar
+  password String?   @db.VarChar(120)
+  at       DateTime? @db.Timestamp
+
+  @@index([id], map: "Login_Attempt_id_uindex")
 }
 
 model Substance {
@@ -46,10 +57,11 @@ model Substance {
   addiction_potential Int?                    @db.SmallInt
   toxicity            toxicity
   chemicals           SubstancesOnChemicals[]
-  form                form[]
+  forms               form[]
   primary_form        form
   experiences         Experience[]
-  interactions        String[]
+  interactions        Json // substance-interactiontype
+  cross_tolerances    Json // substance-activity-strength
   image_url           String?
 
   @@index([id], map: "Substance_id_uindex")
@@ -81,7 +93,7 @@ model Experience {
   id           Int             @id @default(autoincrement())
   ref          String?         @unique @default(uuid())
   user_id      Int
-  user         User            @relation(fields: [user_id], references: [id])
+  user         User            @relation(fields: [user_id], references: [id], onDelete: Cascade)
   substance_id Int
   substance    Substance       @relation(fields: [substance_id], references: [id])
   dosings      Dosing[]
@@ -91,7 +103,7 @@ model Experience {
   reflected    DateTime?       @db.Timestamptz(6)
   status       experiencestate @default(started)
   first_time   Boolean         @default(true)
-  place_slug   String          @db.VarChar(128)
+  place        String          @db.VarChar(128)
   roa          roatype
   mood         Int
 
@@ -106,26 +118,14 @@ model AlternativeName {
   @@index([name], map: "Alternative_Name_name_uindex")
 }
 
-model CrossTolerance {
-  name     String @id @unique
-  strength Int
-
-  @@index([name], map: "Cross_Tolerance_name_uindex")
-}
-
 model Roa {
-  id                  Int             @id @default(autoincrement())
-  substance_id        Int
-  substance           Substance       @relation(fields: [substance_id], references: [id])
-  dose                RoaDose?
-  duration            RoaDuration?
-  bioavailability     Bioavailability @relation(fields: [bioavailability_min, bioavailability_max], references: [min, max])
-  bioavailability_min Float
-  bioavailability_max Float
-  half_life           UnitRange       @relation(fields: [half_life_min, half_life_max, half_life_units], references: [min, max, units])
-  half_life_min       Float
-  half_life_max       Float
-  half_life_units     String
+  id              Int          @id @default(autoincrement())
+  substance_id    Int
+  substance       Substance    @relation(fields: [substance_id], references: [id])
+  dose            RoaDose?
+  duration        RoaDuration?
+  bioavailability Json // min-max-avg
+  half_life       Json // min-max-avg
 
   @@index([id], map: "Roa_id_uindex")
 }
@@ -203,7 +203,6 @@ model UnitRange {
   common_for    RoaDose[]     @relation("common")
   weak_for      RoaDose[]     @relation("weak")
   strong_for    RoaDose[]     @relation("strong")
-  half_life_for Roa?
 
   min   Float
   max   Float
@@ -213,7 +212,6 @@ model UnitRange {
 }
 
 model UnitValue {
-  experiences   Dosing[]
   threshold_for RoaDose[] @relation("threshold")
   heavy_for     RoaDose[] @relation("heavy")
   value         Float
@@ -225,22 +223,11 @@ model UnitValue {
 model Dosing {
   experience_id Int
   experience    Experience @relation(fields: [experience_id], references: [id])
-  dose          UnitValue  @relation(fields: [dose_value, dose_units], references: [value, units])
-  dose_value    Float
-  dose_units    String
+  dose          Json // UnitValue
   submitted_at  DateTime   @default(now())
   substance     String
 
   @@id([experience_id, substance, submitted_at])
-}
-
-model Bioavailability {
-  bioavailability_to Roa?
-  roa_id             Int
-  min                Float
-  max                Float
-
-  @@id([min, max])
 }
 
 model Interaction {

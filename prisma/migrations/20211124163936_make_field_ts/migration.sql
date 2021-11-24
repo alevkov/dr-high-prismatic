@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "LoginAttempt" ALTER COLUMN "at" SET DATA TYPE TIMESTAMP;
