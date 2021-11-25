@@ -111,9 +111,11 @@ model Experience {
 }
 
 model AlternativeName {
-  name         String    @id @unique
+  name         String              @id @unique
+  type         AlternativeNameType
+  brand        Boolean
   substance_id Int
-  substance    Substance @relation(fields: [substance_id], references: [id])
+  substance    Substance           @relation(fields: [substance_id], references: [id])
 
   @@index([name], map: "Alternative_Name_name_uindex")
 }
@@ -228,4 +230,10 @@ enum SubstanceType {
 enum Toxicity {
   Liver
   Neural
+}
+
+enum AlternativeNameType {
+  Slang
+  Pharmaceutical
+  Chemical
 }
