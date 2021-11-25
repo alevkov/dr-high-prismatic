@@ -32,7 +32,7 @@ model Biometric {
   user    User @relation(fields: [user_id], references: [id], onDelete: Cascade)
   weight  Int
   height  Int
-  sex     sex
+  sex     Sex
 
   @@index([id], map: "Biometric_id_uindex")
 }
@@ -49,18 +49,18 @@ model LoginAttempt {
 
 model Substance {
   id                  Int                     @id @default(autoincrement())
-  type                substancetype
+  type                SubstanceType
   names               AlternativeName[]
   primary_name        String
   roas                Roa[]
   summary             String
   addiction_potential Int?                    @db.SmallInt
-  toxicity            toxicity
+  toxicities          Json // Toxicity
   chemicals           SubstancesOnChemicals[]
-  forms               form[]
-  primary_form        form
+  forms               Json
+  primary_form        Form
   experiences         Experience[]
-  interactions        Json // substance-interactiontype
+  interactions        Json // substance-InteractionType
   cross_tolerances    Json // substance-activity-strength
   image_url           String?
 
@@ -101,10 +101,10 @@ model Experience {
   started      DateTime?       @db.Timestamptz(6)
   completed    DateTime?       @db.Timestamptz(6)
   reflected    DateTime?       @db.Timestamptz(6)
-  status       experiencestate @default(started)
+  state        ExperienceState @default(Started)
   first_time   Boolean         @default(true)
   place        String          @db.VarChar(128)
-  roa          roatype
+  roa          RoaType
   mood         Int
 
   @@index([id], map: "Experience_id_uindex")
@@ -131,171 +131,101 @@ model Roa {
 }
 
 model RoaDose {
-  id              Int       @id @default(autoincrement())
-  roa             Roa       @relation(fields: [roa_id], references: [id])
-  roa_id          Int       @unique
-  threshold       UnitValue @relation("threshold", fields: [threshold_value, threshold_units], references: [value, units])
-  threshold_value Float
-  threshold_units String
-  heavy           UnitValue @relation("heavy", fields: [heavy_value, heavy_units], references: [value, units])
-  heavy_value     Float
-  heavy_units     String
-  common          UnitRange @relation("common", fields: [common_min, common_max, common_units], references: [min, max, units])
-  common_min      Float
-  common_max      Float
-  common_units    String
-  weak            UnitRange @relation("weak", fields: [weak_min, weak_max, weak_units], references: [min, max, units])
-  weak_min        Float
-  weak_max        Float
-  weak_units      String
-  strong          UnitRange @relation("strong", fields: [strong_min, strong_max, strong_units], references: [min, max, units])
-  strong_min      Float
-  strong_max      Float
-  strong_units    String
+  id        Int  @id @default(autoincrement())
+  roa       Roa  @relation(fields: [roa_id], references: [id])
+  roa_id    Int  @unique
+  threshold Json // unit
+  heavy     Json // unit
+  common    Json // range
+  weak      Json // range
+  strong    Json // range
 
   @@index([id], map: "Roa_Dose_id_uindex")
 }
 
 model RoaDuration {
-  id              Int       @id @default(autoincrement())
-  roa             Roa       @relation(fields: [roa_id], references: [id])
-  roa_id          Int       @unique
-  afterglow       UnitRange @relation("afterglow", fields: [afterglow_min, afterglow_max, afterglow_units], references: [min, max, units])
-  afterglow_min   Float
-  afterglow_max   Float
-  afterglow_units String
-  comeup          UnitRange @relation("comeup", fields: [comeup_min, comeup_max, comeup_units], references: [min, max, units])
-  comeup_min      Float
-  comeup_max      Float
-  comeup_units    String
-  duration        UnitRange @relation("duration", fields: [duration_min, duration_max, duration_units], references: [min, max, units])
-  duration_min    Float
-  duration_max    Float
-  duration_units  String
-  offset          UnitRange @relation("offset", fields: [offset_min, offset_max, offset_units], references: [min, max, units])
-  offset_min      Float
-  offset_max      Float
-  offset_units    String
-  onset           UnitRange @relation("onset", fields: [onset_min, onset_max, onset_units], references: [min, max, units])
-  onset_min       Float
-  onset_max       Float
-  onset_units     String
-  peak            UnitRange @relation("peak", fields: [peak_min, peak_max, peak_units], references: [min, max, units])
-  peak_min        Float
-  peak_max        Float
-  peak_units      String
-  total           UnitRange @relation("total", fields: [total_min, total_max, total_units], references: [min, max, units])
-  total_min       Float
-  total_max       Float
-  total_units     String
+  id        Int  @id @default(autoincrement())
+  roa       Roa  @relation(fields: [roa_id], references: [id])
+  roa_id    Int  @unique
+  afterglow Json
+  comeup    Json // range
+  duration  Json // range
+  offset    Json // range
+  onset     Json // range
+  peak      Json //range
+  total     Json // range
 
   @@index([id], map: "Roa_Duration_id_uindex")
 }
 
-model UnitRange {
-  afterglow_for RoaDuration[] @relation("afterglow")
-  comeup_for    RoaDuration[] @relation("comeup")
-  duration_for  RoaDuration[] @relation("duration")
-  offset_for    RoaDuration[] @relation("offset")
-  onset_for     RoaDuration[] @relation("onset")
-  peak_for      RoaDuration[] @relation("peak")
-  total_for     RoaDuration[] @relation("total")
-  common_for    RoaDose[]     @relation("common")
-  weak_for      RoaDose[]     @relation("weak")
-  strong_for    RoaDose[]     @relation("strong")
-
-  min   Float
-  max   Float
-  units String
-
-  @@id([min, max, units])
-}
-
-model UnitValue {
-  threshold_for RoaDose[] @relation("threshold")
-  heavy_for     RoaDose[] @relation("heavy")
-  value         Float
-  units         String
-
-  @@id([value, units])
-}
-
 model Dosing {
+  id            Int        @id @unique
   experience_id Int
   experience    Experience @relation(fields: [experience_id], references: [id])
-  dose          Json // UnitValue
+  dose          Json // unit
   submitted_at  DateTime   @default(now())
   substance     String
-
-  @@id([experience_id, substance, submitted_at])
 }
 
-model Interaction {
-  name String
-  type interactiontype
-
-  @@id([name, type])
+enum ExperienceState {
+  Planning
+  Started
+  Completed
+  Reflected
 }
 
-enum experiencestate {
-  planning
-  started
-  completed
-  reflected
+enum Form {
+  Pill
+  Liquid
+  Botanical
+  Fungus
+  Powder
+  Tab
+  Seed
+  Crystal
 }
 
-enum form {
-  pill
-  liquid
-  botanical
-  fungus
-  powder
-  tab
-  seed
-  crystal
+enum InteractionType {
+  LowRiskSynergy
+  LowRiskNoSynergy
+  Dangerous
+  Unpredictable
+  ReverseSynergy
 }
 
-enum interactiontype {
-  low_risk_synergy
-  low_risk_no_synergy
-  dangerous
-  unpredictable
-  reverse_synergy
+enum RoaType {
+  Oral
+  Sublingual
+  Buccal
+  Insufflated
+  Rectal
+  Transdermal
+  Subcutaneous
+  Intramuscular
+  Intravenous
+  Intrathecal
+  Smoked
+  Transconjunctival
 }
 
-enum roatype {
-  oral
-  sublingual
-  buccal
-  insufflated
-  rectal
-  transdermal
-  subcutaneous
-  intramuscular
-  intravenous
-  intrathecal
-  smoked
-  transconjunctival
+enum Sex {
+  Male
+  Female
+  Other
 }
 
-enum sex {
-  male
-  female
-  other
+enum SubstanceType {
+  Cannabinoids
+  Empathogens
+  Stimulants
+  Psychedelics
+  Dissociatives
+  Depressants
+  Deliriants
+  Opioids
 }
 
-enum substancetype {
-  cannabinoids
-  empathogens
-  stimulants
-  psychedelics
-  dissociatives
-  depressants
-  deliriants
-  opioids
-}
-
-enum toxicity {
-  liver
-  neural
+enum Toxicity {
+  Liver
+  Neural
 }
