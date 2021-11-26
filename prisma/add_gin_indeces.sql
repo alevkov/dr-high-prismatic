@@ -2,6 +2,10 @@ BEGIN;
 
 CREATE extension pg_trgm WITH SCHEMA public;
 
+DROP INDEX IF EXISTS Alternative_name_name_uindex;
+DROP INDEX IF EXISTS Substance_name_index;
+
+-- Don't forget to rename these
 CREATE INDEX Alternative_Name_name_uindex ON "AlternativeName" USING GIN (name gin_trgm_ops);
 CREATE INDEX Substance_name_index ON "Substance" USING GIN (primary_name gin_trgm_ops);
 
@@ -26,3 +30,5 @@ RETURNS SETOF "Substance" AS $$
         similarity(name, alternative_name) DESC
     )
 $$ LANGUAGE sql STABLE;
+
+END;

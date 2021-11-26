@@ -1,4 +1,4 @@
-create extension pgcrypto;
+create extension pgcrypto WITH SCHEMA public;
 
 -- Set password hash on insert User
 

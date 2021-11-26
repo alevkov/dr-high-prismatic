@@ -27,13 +27,14 @@ model User {
 }
 
 model Biometric {
-  id      Int  @id @default(autoincrement())
-  user_id Int  @unique
-  user    User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  id      Int     @id @default(autoincrement())
+  user_id Int     @unique
+  user    User    @relation(fields: [user_id], references: [id], onDelete: Cascade)
   weight  Int
   height  Int
-  sex     Sex
+  sex     SexType @relation(fields: [sexValue], references: [value])
 
+  sexValue String
   @@index([id], map: "Biometric_id_uindex")
 }
 
@@ -49,7 +50,7 @@ model LoginAttempt {
 
 model Substance {
   id                  Int                     @id @default(autoincrement())
-  type                SubstanceType
+  type                SubstanceType           @relation(fields: [substanceTypeValue], references: [value])
   names               AlternativeName[]
   primary_name        String
   roas                Roa[]
@@ -58,12 +59,14 @@ model Substance {
   toxicities          Json // Toxicity
   chemicals           SubstancesOnChemicals[]
   forms               Json
-  primary_form        Form
+  primary_form        FormType                @relation(fields: [formValue], references: [value])
   experiences         Experience[]
   interactions        Json // substance-InteractionType
   cross_tolerances    Json // substance-activity-strength
   image_url           String?
 
+  substanceTypeValue String
+  formValue          String
   @@index([id], map: "Substance_id_uindex")
   @@index([primary_name], map: "Substance_name_index")
 }
@@ -90,45 +93,49 @@ model SubstancesOnChemicals {
 }
 
 model Experience {
-  id           Int             @id @default(autoincrement())
-  ref          String?         @unique @default(uuid())
+  id           Int                 @id @default(autoincrement())
+  ref          String?             @unique @default(uuid())
   user_id      Int
-  user         User            @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  user         User                @relation(fields: [user_id], references: [id], onDelete: Cascade)
   substance_id Int
-  substance    Substance       @relation(fields: [substance_id], references: [id])
+  substance    Substance           @relation(fields: [substance_id], references: [id])
   dosings      Dosing[]
-  created      DateTime        @default(now()) @db.Timestamptz(6)
-  started      DateTime?       @db.Timestamptz(6)
-  completed    DateTime?       @db.Timestamptz(6)
-  reflected    DateTime?       @db.Timestamptz(6)
-  state        ExperienceState @default(Started)
-  first_time   Boolean         @default(true)
-  place        String          @db.VarChar(128)
-  roa          RoaType
+  created      DateTime            @default(now()) @db.Timestamptz(6)
+  started      DateTime?           @db.Timestamptz(6)
+  completed    DateTime?           @db.Timestamptz(6)
+  reflected    DateTime?           @db.Timestamptz(6)
+  state        ExperienceStateType @relation(fields: [experienceStateValue], references: [value])
+  first_time   Boolean             @default(true)
+  place        String              @db.VarChar(128)
+  roa          RoaType             @relation(fields: [roaTypeValue], references: [value])
   mood         Int
 
+  experienceStateValue String
+  roaTypeValue         String
   @@index([id], map: "Experience_id_uindex")
 }
 
 model AlternativeName {
   name         String              @id @unique
-  type         AlternativeNameType
-  brand        Boolean
+  type         AlternativeNameType @relation(fields: [alternativeNameTypeValue], references: [value])
   substance_id Int
   substance    Substance           @relation(fields: [substance_id], references: [id])
 
+  alternativeNameTypeValue String
   @@index([name], map: "Alternative_Name_name_uindex")
 }
 
 model Roa {
   id              Int          @id @default(autoincrement())
+  type            RoaType      @relation(fields: [roaTypeValue], references: [value])
   substance_id    Int
   substance       Substance    @relation(fields: [substance_id], references: [id])
   dose            RoaDose?
   duration        RoaDuration?
-  bioavailability Json // min-max-avg
-  half_life       Json // min-max-avg
+  bioavailability Json
+  half_life       Json
 
+  roaTypeValue String
   @@index([id], map: "Roa_id_uindex")
 }
 
@@ -136,8 +143,8 @@ model RoaDose {
   id        Int  @id @default(autoincrement())
   roa       Roa  @relation(fields: [roa_id], references: [id])
   roa_id    Int  @unique
-  threshold Json // unit
-  heavy     Json // unit
+  threshold Json // range
+  heavy     Json // range
   common    Json // range
   weak      Json // range
   strong    Json // range
@@ -154,7 +161,7 @@ model RoaDuration {
   duration  Json // range
   offset    Json // range
   onset     Json // range
-  peak      Json //range
+  peak      Json // range
   total     Json // range
 
   @@index([id], map: "Roa_Duration_id_uindex")
@@ -169,71 +176,57 @@ model Dosing {
   substance     String
 }
 
-enum ExperienceState {
-  Planning
-  Started
-  Completed
-  Reflected
+model ExperienceStateType {
+  value String @id @unique
+
+  Experience Experience[]
+  @@index([value], map: "Experience_State_Type_value_uindex")
 }
 
-enum Form {
-  Pill
-  Liquid
-  Botanical
-  Fungus
-  Powder
-  Tab
-  Seed
-  Crystal
+model InteractionType {
+  value String @id @unique
+
+  @@index([value], map: "Interaction_Type_value_uindex")
 }
 
-enum InteractionType {
-  LowRiskSynergy
-  LowRiskNoSynergy
-  Dangerous
-  Unpredictable
-  ReverseSynergy
+model FormType {
+  value String @id @unique
+
+  Substance Substance[]
+  @@index([value], map: "Form_Type_value_uindex")
 }
 
-enum RoaType {
-  Oral
-  Sublingual
-  Buccal
-  Insufflated
-  Rectal
-  Transdermal
-  Subcutaneous
-  Intramuscular
-  Intravenous
-  Intrathecal
-  Smoked
-  Transconjunctival
+model RoaType {
+  value String @id @unique
+
+  Experience Experience[]
+  Roa        Roa[]
+  @@index([value], map: "Roa_Type_value_uindex")
 }
 
-enum Sex {
-  Male
-  Female
-  Other
+model SexType {
+  value String @id @unique
+
+  Biometric Biometric[]
+  @@index([value], map: "Sex_Type_value_uindex")
 }
 
-enum SubstanceType {
-  Cannabinoids
-  Empathogens
-  Stimulants
-  Psychedelics
-  Dissociatives
-  Depressants
-  Deliriants
-  Opioids
+model SubstanceType {
+  value String @id @unique
+
+  Substance Substance[]
+  @@index([value], map: "Substance_Type_value_uindex")
 }
 
-enum Toxicity {
-  Liver
-  Neural
+model ToxicityType {
+  value String @id @unique
+
+  @@index([value], map: "Toxicity_Type_value_uindex")
 }
 
-enum AlternativeNameType {
-  Slang
-  Pharmaceutical
-  Chemical
+model AlternativeNameType {
+  value String @id @unique
+
+  AlternativeName AlternativeName[]
+  @@index([value], map: "Alternative_Name_Type_value_uindex")
 }

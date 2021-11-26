@@ -8,11 +8,12 @@ let drug: Prisma.SubstanceCreateInput = {
   names: {
     createMany: {
       data: [
-        {name: "Crystal"},
-        {name: "Meth"},
-        {name: "Desoxyn"},
-        {name: "Ice"},
-        {name: "Methedrine"}
+        {name: "Crystal", type: "Slang", brand: false},
+        {name: "Meth", type: "Slang", brand: false},
+        {name: "Desoxyn", type: "Pharmaceutical", brand: true},
+        {name: "Ice", type: "Slang", brand: false},
+        {name: "Methedrine", type: "Pharmaceutical", brand: true},
+        {name: "Desoxyephedrine", type: "Chemical", brand: false},
       ]
     }
   },
