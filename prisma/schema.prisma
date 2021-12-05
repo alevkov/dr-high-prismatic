@@ -1,11 +1,233 @@
 generator client {
-  provider        = "prisma-client-js"
-  previewFeatures = ["referentialIntegrity", "filterJson", "dataProxy"]
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+model AlternativeName {
+  name                     String              @id @unique
+  substance_id             Int
+  alternativeNameTypeValue String
+  AlternativeNameType      AlternativeNameType @relation(fields: [alternativeNameTypeValue], references: [value])
+  Substance                Substance           @relation(fields: [substance_id], references: [id])
+
+  @@index([name], map: "Alternative_Name_name_uindex")
+  @@index([name], map: "alternative_name_name_uindex")
+}
+
+model AlternativeNameType {
+  value           String            @id @unique
+  AlternativeName AlternativeName[]
+
+  @@index([value], map: "Alternative_Name_Type_value_uindex")
+}
+
+model Biometric {
+  id       Int     @id @default(autoincrement())
+  user_id  Int     @unique
+  weight   Int
+  height   Int
+  sexValue String
+  SexType  SexType @relation(fields: [sexValue], references: [value])
+  User     User    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([id], map: "Biometric_id_uindex")
+}
+
+model Chemical {
+  id                    Int                     @id @default(autoincrement())
+  name                  String
+  salt                  String?
+  isomer                String?
+  formula               String?
+  SubstancesOnChemicals SubstancesOnChemicals[]
+
+  @@index([id], map: "Chemical_id_uindex")
+  @@index([name], map: "Chemical_name_index")
+}
+
+model Dosing {
+  id            Int        @id @default(autoincrement())
+  experience_id Int
+  dose          Json
+  submitted_at  DateTime   @default(now())
+  substance     String
+  Experience    Experience @relation(fields: [experience_id], references: [id])
+
+  @@index([id], map: "Dosing_id_uindex")
+}
+
+model Experience {
+  id                   Int                 @id @default(autoincrement())
+  user_id              Int
+  substance_id         Int
+  created              DateTime            @default(now())
+  started              DateTime?
+  completed            DateTime?
+  reflected            DateTime?
+  first_time           Boolean             @default(true)
+  place                String              @db.VarChar(128)
+  mood                 Int
+  experienceStateValue String
+  roaTypeValue         String
+  formTypeValue        String
+  ExperienceStateType  ExperienceStateType @relation(fields: [experienceStateValue], references: [value])
+  FormType             FormType            @relation(fields: [formTypeValue], references: [value])
+  RoaType              RoaType             @relation(fields: [roaTypeValue], references: [value])
+  Substance            Substance           @relation(fields: [substance_id], references: [id])
+  User                 User                @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  Dosing               Dosing[]
+  Note                 Note[]
+
+  @@index([id], map: "Experience_id_uindex")
+}
+
+model ExperienceStateType {
+  value      String       @id @unique
+  Experience Experience[]
+
+  @@index([value], map: "Experience_State_Type_value_uindex")
+}
+
+model FormType {
+  value      String       @id @unique
+  Experience Experience[]
+  Substance  Substance[]
+
+  @@index([value], map: "Form_Type_value_uindex")
+}
+
+model InteractionType {
+  value String @id @unique
+
+  @@index([value], map: "Interaction_Type_value_uindex")
+}
+
+model LoginAttempt {
+  id       Int       @id @default(autoincrement())
+  email    String    @db.VarChar(120)
+  token    String?   @db.VarChar
+  password String?   @db.VarChar(120)
+  at       DateTime? @db.Timestamp(6)
+
+  @@index([id], map: "Login_Attempt_id_uindex")
+}
+
+model Note {
+  id            Int        @id @default(autoincrement())
+  experience_id Int
+  note          Json
+  submitted_at  DateTime   @default(now())
+  substance     String
+  Experience    Experience @relation(fields: [experience_id], references: [id])
+
+  @@index([id], map: "Note_id_uindex")
+}
+
+model Roa {
+  id              Int          @id @default(autoincrement())
+  substance_id    Int
+  bioavailability Json
+  half_life       Json
+  roaTypeValue    String
+  RoaType         RoaType      @relation(fields: [roaTypeValue], references: [value])
+  Substance       Substance    @relation(fields: [substance_id], references: [id])
+  RoaDose         RoaDose?
+  RoaDuration     RoaDuration?
+
+  @@index([id], map: "Roa_id_uindex")
+}
+
+model RoaDose {
+  id        Int  @id @default(autoincrement())
+  roa_id    Int  @unique
+  threshold Json
+  heavy     Json
+  common    Json
+  weak      Json
+  strong    Json
+  Roa       Roa  @relation(fields: [roa_id], references: [id])
+
+  @@index([id], map: "Roa_Dose_id_uindex")
+}
+
+model RoaDuration {
+  id        Int  @id @default(autoincrement())
+  roa_id    Int  @unique
+  afterglow Json
+  comeup    Json
+  duration  Json
+  offset    Json
+  onset     Json
+  peak      Json
+  total     Json
+  Roa       Roa  @relation(fields: [roa_id], references: [id])
+
+  @@index([id], map: "Roa_Duration_id_uindex")
+}
+
+model RoaType {
+  value      String       @id @unique
+  Experience Experience[]
+  Roa        Roa[]
+
+  @@index([value], map: "Roa_Type_value_uindex")
+}
+
+model SexType {
+  value     String      @id @unique
+  Biometric Biometric[]
+
+  @@index([value], map: "Sex_Type_value_uindex")
+}
+
+model Substance {
+  id                    Int                     @id @default(autoincrement())
+  primary_name          String
+  summary               String
+  addiction_potential   Int?                    @db.SmallInt
+  toxicities            Json
+  forms                 Json
+  interactions          Json
+  cross_tolerances      Json
+  image_url             String?
+  substanceTypeValue    String
+  formValue             String
+  FormType              FormType                @relation(fields: [formValue], references: [value])
+  SubstanceType         SubstanceType           @relation(fields: [substanceTypeValue], references: [value])
+  AlternativeName       AlternativeName[]
+  Experience            Experience[]
+  Roa                   Roa[]
+  SubstancesOnChemicals SubstancesOnChemicals[]
+
+  @@index([id], map: "Substance_id_uindex")
+  @@index([primary_name], map: "Substance_name_index")
+  @@index([primary_name], map: "substance_name_index")
+}
+
+model SubstanceType {
+  value     String      @id @unique
+  Substance Substance[]
+
+  @@index([value], map: "Substance_Type_value_uindex")
+}
+
+model SubstancesOnChemicals {
+  chemical_id  Int
+  substance_id Int
+  Chemical     Chemical  @relation(fields: [chemical_id], references: [id])
+  Substance    Substance @relation(fields: [substance_id], references: [id])
+
+  @@id([chemical_id, substance_id])
+}
+
+model ToxicityType {
+  value String @id @unique
+
+  @@index([value], map: "Toxicity_Type_value_uindex")
 }
 
 model User {
@@ -16,217 +238,12 @@ model User {
   last_name     String?      @db.VarChar(32)
   username      String       @db.VarChar(32)
   birthday      DateTime?    @db.Date
-  biometrics    Biometric?
-  experiences   Experience[]
+  Biometric     Biometric?
+  Experience    Experience[]
 
-  @@index([id], map: "User_id_uindex")
   @@index([email], map: "User_email_index")
   @@index([first_name], map: "User_first_name_index")
+  @@index([id], map: "User_id_uindex")
   @@index([last_name], map: "User_last_name_index")
   @@index([username], map: "User_username_index")
-}
-
-model Biometric {
-  id      Int     @id @default(autoincrement())
-  user_id Int     @unique
-  user    User    @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  weight  Int
-  height  Int
-  sex     SexType @relation(fields: [sexValue], references: [value])
-
-  sexValue String
-  @@index([id], map: "Biometric_id_uindex")
-}
-
-model LoginAttempt {
-  id       Int       @id @default(autoincrement())
-  email    String    @db.VarChar(120)
-  token    String?   @db.VarChar
-  password String?   @db.VarChar(120)
-  at       DateTime? @db.Timestamp
-
-  @@index([id], map: "Login_Attempt_id_uindex")
-}
-
-model Substance {
-  id                  Int                     @id @default(autoincrement())
-  type                SubstanceType           @relation(fields: [substanceTypeValue], references: [value])
-  names               AlternativeName[]
-  primary_name        String
-  roas                Roa[]
-  summary             String
-  addiction_potential Int?                    @db.SmallInt
-  toxicities          Json // Toxicity
-  chemicals           SubstancesOnChemicals[]
-  forms               Json
-  primary_form        FormType                @relation(fields: [formValue], references: [value])
-  experiences         Experience[]
-  interactions        Json // substance-InteractionType
-  cross_tolerances    Json // substance-activity-strength
-  image_url           String?
-
-  substanceTypeValue String
-  formValue          String
-  @@index([id], map: "Substance_id_uindex")
-  @@index([primary_name], map: "Substance_name_index")
-}
-
-model Chemical {
-  id         Int                     @id @default(autoincrement())
-  name       String
-  salt       String?
-  isomer     String?
-  formula    String?
-  substances SubstancesOnChemicals[]
-
-  @@index([id], map: "Chemical_id_uindex")
-  @@index([name], map: "Chemical_name_index")
-}
-
-model SubstancesOnChemicals {
-  chemical     Chemical  @relation(fields: [chemical_id], references: [id])
-  chemical_id  Int
-  substance    Substance @relation(fields: [substance_id], references: [id])
-  substance_id Int
-
-  @@id([chemical_id, substance_id])
-}
-
-model Experience {
-  id           Int                 @id @default(autoincrement())
-  ref          String?             @unique @default(uuid())
-  user_id      Int
-  user         User                @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  substance_id Int
-  substance    Substance           @relation(fields: [substance_id], references: [id])
-  dosings      Dosing[]
-  created      DateTime            @default(now()) @db.Timestamptz(6)
-  started      DateTime?           @db.Timestamptz(6)
-  completed    DateTime?           @db.Timestamptz(6)
-  reflected    DateTime?           @db.Timestamptz(6)
-  state        ExperienceStateType @relation(fields: [experienceStateValue], references: [value])
-  first_time   Boolean             @default(true)
-  place        String              @db.VarChar(128)
-  roa          RoaType             @relation(fields: [roaTypeValue], references: [value])
-  mood         Int
-
-  experienceStateValue String
-  roaTypeValue         String
-  @@index([id], map: "Experience_id_uindex")
-}
-
-model AlternativeName {
-  name         String              @id @unique
-  type         AlternativeNameType @relation(fields: [alternativeNameTypeValue], references: [value])
-  substance_id Int
-  substance    Substance           @relation(fields: [substance_id], references: [id])
-
-  alternativeNameTypeValue String
-  @@index([name], map: "Alternative_Name_name_uindex")
-}
-
-model Roa {
-  id              Int          @id @default(autoincrement())
-  type            RoaType      @relation(fields: [roaTypeValue], references: [value])
-  substance_id    Int
-  substance       Substance    @relation(fields: [substance_id], references: [id])
-  dose            RoaDose?
-  duration        RoaDuration?
-  bioavailability Json
-  half_life       Json
-
-  roaTypeValue String
-  @@index([id], map: "Roa_id_uindex")
-}
-
-model RoaDose {
-  id        Int  @id @default(autoincrement())
-  roa       Roa  @relation(fields: [roa_id], references: [id])
-  roa_id    Int  @unique
-  threshold Json // range
-  heavy     Json // range
-  common    Json // range
-  weak      Json // range
-  strong    Json // range
-
-  @@index([id], map: "Roa_Dose_id_uindex")
-}
-
-model RoaDuration {
-  id        Int  @id @default(autoincrement())
-  roa       Roa  @relation(fields: [roa_id], references: [id])
-  roa_id    Int  @unique
-  afterglow Json
-  comeup    Json // range
-  duration  Json // range
-  offset    Json // range
-  onset     Json // range
-  peak      Json // range
-  total     Json // range
-
-  @@index([id], map: "Roa_Duration_id_uindex")
-}
-
-model Dosing {
-  id            Int        @id @unique
-  experience_id Int
-  experience    Experience @relation(fields: [experience_id], references: [id])
-  dose          Json // unit
-  submitted_at  DateTime   @default(now())
-  substance     String
-}
-
-model ExperienceStateType {
-  value String @id @unique
-
-  Experience Experience[]
-  @@index([value], map: "Experience_State_Type_value_uindex")
-}
-
-model InteractionType {
-  value String @id @unique
-
-  @@index([value], map: "Interaction_Type_value_uindex")
-}
-
-model FormType {
-  value String @id @unique
-
-  Substance Substance[]
-  @@index([value], map: "Form_Type_value_uindex")
-}
-
-model RoaType {
-  value String @id @unique
-
-  Experience Experience[]
-  Roa        Roa[]
-  @@index([value], map: "Roa_Type_value_uindex")
-}
-
-model SexType {
-  value String @id @unique
-
-  Biometric Biometric[]
-  @@index([value], map: "Sex_Type_value_uindex")
-}
-
-model SubstanceType {
-  value String @id @unique
-
-  Substance Substance[]
-  @@index([value], map: "Substance_Type_value_uindex")
-}
-
-model ToxicityType {
-  value String @id @unique
-
-  @@index([value], map: "Toxicity_Type_value_uindex")
-}
-
-model AlternativeNameType {
-  value String @id @unique
-
-  AlternativeName AlternativeName[]
-  @@index([value], map: "Alternative_Name_Type_value_uindex")
 }

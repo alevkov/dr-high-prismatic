@@ -2,8 +2,8 @@ BEGIN;
 
 CREATE extension pg_trgm WITH SCHEMA public;
 
-DROP INDEX IF EXISTS Alternative_name_name_uindex;
-DROP INDEX IF EXISTS Substance_name_index;
+DROP INDEX IF EXISTS Alternative_Name_name_uindex;
+DROP INDEX IF EXISTS Substance_Name_index;
 
 -- Don't forget to rename these
 CREATE INDEX Alternative_Name_name_uindex ON "AlternativeName" USING GIN (name gin_trgm_ops);
