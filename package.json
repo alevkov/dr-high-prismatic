@@ -22,13 +22,13 @@
     "eslint-plugin-import": "^2.25.3",
     "nodemon": "^2.0.15",
     "npxd": "^1.2.1",
-    "prisma": "3.5.0",
+    "prisma": "^3.7.0",
     "ts-node": "^10.4.0",
     "typescript": "^4.5.2"
   },
   "dependencies": {
     "@apollo/client": "^3.4.17",
-    "@prisma/client": "3.5.0",
+    "@prisma/client": "^3.7.0",
     "@types/bcrypt": "^5.0.0",
     "bcrypt": "^5.0.1",
     "bcryptjs": "^2.4.3",

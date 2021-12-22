@@ -71,6 +71,7 @@ model Experience {
   first_time           Boolean             @default(true)
   place                String              @db.VarChar(128)
   mood                 Int
+  mood_after           Int?
   experienceStateValue String
   roaTypeValue         String
   formTypeValue        String
