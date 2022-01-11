@@ -12,7 +12,7 @@ model AlternativeName {
   substance_id             Int
   alternativeNameTypeValue String
   AlternativeNameType      AlternativeNameType @relation(fields: [alternativeNameTypeValue], references: [value])
-  Substance                Substance           @relation(fields: [substance_id], references: [id])
+  Substance                Substance           @relation(fields: [substance_id], references: [id], onDelete: Cascade)
 
   @@index([name], map: "Alternative_Name_name_uindex")
   @@index([name], map: "alternative_name_name_uindex")
@@ -55,7 +55,7 @@ model Dosing {
   dose          Json
   submitted_at  DateTime   @default(now())
   substance     String
-  Experience    Experience @relation(fields: [experience_id], references: [id])
+  Experience    Experience @relation(fields: [experience_id], references: [id], onDelete: Cascade)
 
   @@index([id], map: "Dosing_id_uindex")
 }
@@ -64,6 +64,7 @@ model Experience {
   id                   Int                 @id @default(autoincrement())
   user_id              Int
   substance_id         Int
+  custom_substance_id  String?
   created              DateTime            @default(now())
   started              DateTime?
   completed            DateTime?
@@ -135,7 +136,7 @@ model Roa {
   half_life       Json
   roaTypeValue    String
   RoaType         RoaType      @relation(fields: [roaTypeValue], references: [value])
-  Substance       Substance    @relation(fields: [substance_id], references: [id])
+  Substance       Substance    @relation(fields: [substance_id], references: [id], onDelete: Cascade)
   RoaDose         RoaDose?
   RoaDuration     RoaDuration?
 
@@ -150,7 +151,7 @@ model RoaDose {
   common    Json
   weak      Json
   strong    Json
-  Roa       Roa  @relation(fields: [roa_id], references: [id])
+  Roa       Roa  @relation(fields: [roa_id], references: [id], onDelete: Cascade)
 
   @@index([id], map: "Roa_Dose_id_uindex")
 }
@@ -165,7 +166,7 @@ model RoaDuration {
   onset     Json
   peak      Json
   total     Json
-  Roa       Roa  @relation(fields: [roa_id], references: [id])
+  Roa       Roa  @relation(fields: [roa_id], references: [id], onDelete: Cascade)
 
   @@index([id], map: "Roa_Duration_id_uindex")
 }
@@ -197,6 +198,7 @@ model Substance {
   image_url             String?
   substanceTypeValue    String
   formValue             String
+  typical_units         String?
   FormType              FormType                @relation(fields: [formValue], references: [value])
   SubstanceType         SubstanceType           @relation(fields: [substanceTypeValue], references: [value])
   AlternativeName       AlternativeName[]
@@ -209,6 +211,20 @@ model Substance {
   @@index([primary_name], map: "substance_name_index")
 }
 
+model CustomSubstance {
+  id                Int     @id @default(autoincrement()) // stored in DB
+  public_id         String // stored in DB
+  primary_name      String?
+  forms             Json?
+  primary_form      String?
+  roas              Json?
+  typical_units     String?
+  alternative_names Json?
+  substance_type    String?
+
+  @@index([id], map: "CustomSubstance_id_uindex")
+}
+
 model SubstanceType {
   value     String      @id @unique
   Substance Substance[]
@@ -219,8 +235,8 @@ model SubstanceType {
 model SubstancesOnChemicals {
   chemical_id  Int
   substance_id Int
-  Chemical     Chemical  @relation(fields: [chemical_id], references: [id])
-  Substance    Substance @relation(fields: [substance_id], references: [id])
+  Chemical     Chemical  @relation(fields: [chemical_id], references: [id], onDelete: Cascade)
+  Substance    Substance @relation(fields: [substance_id], references: [id], onDelete: Cascade)
 
   @@id([chemical_id, substance_id])
 }
